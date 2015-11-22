@@ -1,0 +1,7 @@
+[package]
+name = "erode"
+version = "0.1.0"
+authors = ["tom"]
+
+[dependencies]
+httparse = "1.0"
