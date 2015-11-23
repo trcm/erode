@@ -5,3 +5,4 @@ authors = ["tom"]
 
 [dependencies]
 httparse = "1.0"
+bufstream = "0.1.1"
