@@ -6,3 +6,6 @@ authors = ["tom"]
 [dependencies]
 httparse = "1.0"
 bufstream = "0.1.1"
+getopts = "0.2"
+time = "0.1"
+
