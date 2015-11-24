@@ -39,13 +39,13 @@ fn handle_client(stream: TcpStream) {
     if method.to_string().is_empty() || path.to_string().is_empty() {
         let res = b"HTTP/1.0 404 Not Found\n \
                     Connection: close\n";
-        bs.write(res);
+        let _ = bs.write(res);
         return;
-    } else if method.eq("POST") {
+    } else if !method.eq("GET") {
         // only allows get requests
         let res = b"HTTP/1.0 405 Method Not Allowed\n \
                     Connection: close\n";
-        bs.write(res);
+        let _ = bs.write(res);
         return;
     }
     
@@ -60,6 +60,7 @@ fn send_response(stream: &mut TcpStream, path: &str, method: &str) {
     let mut file = match File::open(trimmed) {
         Ok(file) => { file },
         Err(e) => {
+            println!("Error: {}\n Error: {}", path, e);
             let res = b"HTTP/1.0 404 Not Found\n \
                         Connection: close\n";
             let _ = stream.write(res);
@@ -68,10 +69,10 @@ fn send_response(stream: &mut TcpStream, path: &str, method: &str) {
     };
 
     let mut contents = Vec::new();
-    file.read_to_end(&mut contents);
+    let _ = file.read_to_end(&mut contents);
     println!("{}", contents.len());
 
-    let mut now = time::now();
+    let now = time::now();
     
     let res = format!("HTTP/1.0 200 OK\n\
                        Date: {}\n\
@@ -80,7 +81,7 @@ fn send_response(stream: &mut TcpStream, path: &str, method: &str) {
     let _ = stream.write(&*res.into_bytes());
 
     let _ = stream.write(&*contents);
-    stream.flush();
+    stream.flush().unwrap();
 }
 
 fn usage() {
@@ -91,7 +92,7 @@ fn usage() {
 fn main() {
     // grab the args
     let args: Vec<_> = env::args().collect();
-    let program = args[0].clone();
+    // let program = args[0].clone();
     // if a.len() != 3 {
     //     usage();
     // }
