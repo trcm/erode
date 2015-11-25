@@ -13,7 +13,6 @@ use std::env;
 use bufstream::BufStream;
 use getopts::Options;
 
-
 /// Erode
 ///
 /// Erode is a Toy http server I wrote to help me learn Rust.
@@ -28,13 +27,12 @@ use getopts::Options;
 ///  -l: toggle logging to the command line
 ///  -h: prints the help text
 
-
 /// handle_client
 /// Handling an incomming connection to the server
 ///
 /// Arguments:
 /// stream - Incoming TcpStream
-fn handle_client(stream: TcpStream) {
+fn handle_client(stream: TcpStream, dir: &String) {
 
     let addr = stream.peer_addr().unwrap();
     println!("Connection from {}", addr);
@@ -73,7 +71,7 @@ fn handle_client(stream: TcpStream) {
         return;
     }
 
-    send_response(bs.get_mut(), path);
+    send_response(bs.get_mut(), path, dir);
 }
 
 /// send_response:
@@ -82,10 +80,10 @@ fn handle_client(stream: TcpStream) {
 /// Arguments
 /// stream - mutable reference to the client TcpStream
 /// path   - path to the file the user wants
-fn send_response(stream: &mut TcpStream, path: &str) {
+fn send_response(stream: &mut TcpStream, path: &str, dir: &String) {
 
-    let trimmed = path.trim_left_matches('/');
-    println!("User requsted {}", trimmed);
+    let trimmed = dir.to_string() + "/" + path.trim_left_matches('/');
+    println!("User requsted: {}", trimmed);
 
     // check if the file exists
     let mut file = match File::open(trimmed) {
@@ -113,7 +111,7 @@ fn send_response(stream: &mut TcpStream, path: &str) {
     // send the header and the data
     let _ = stream.write(&*res.into_bytes());
     let _ = stream.write(&*contents);
-   
+    
     // ensure all data has been sent to the client
     stream.flush().unwrap();
 }
@@ -136,6 +134,7 @@ fn main() {
     opts.optflag("l", "log", "Turn on logging to the console");
     opts.reqopt("a", "address", "Local address to bind to", "ADDRESS");
     opts.reqopt("p", "port", "Local port to bind to", "PORT");
+    opts.reqopt("r", "directory", "Directory to be served", "DIRECTORY");
     opts.optflag("h", "help", "Print help");
 
     //parse command line arguemnts
@@ -153,6 +152,12 @@ fn main() {
     let address = matches.opt_str("a").unwrap();
     let port = matches.opt_str("p").unwrap();
 
+
+    let r = match matches.opt_str("r") {
+        Some(dir) => dir,
+        None => ".".to_string()
+    };
+
     let addr = address.to_string() + ":" + &port;
 
     // Bind a new TCP Socket to the given address
@@ -168,10 +173,11 @@ fn main() {
 
     // accept connections and process them, spawning a new thread for each one
     for stream in listener.incoming() {
+        let dir = r.clone();
         match stream {
             Ok(stream) => {
                 thread::spawn(move|| {
-                    handle_client(stream)
+                    handle_client(stream, &dir);
                 });
             }
             Err(e) => {
@@ -182,4 +188,10 @@ fn main() {
 
     // close the socket server
     drop(listener);
+}
+
+#[test]
+#[should_panic]
+fn it_works() {
+    assert_eq!("hello", "world"); 
 }
